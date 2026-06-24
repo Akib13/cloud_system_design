@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MyCloud Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 20px; font-weight: 700; color: #7c85ff; }
+    header h1 span { color: #e2e8f0; }
+    #api-status {
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .status-ok  { background: #1a3a2a; color: #4ade80; border: 1px solid #4ade80; }
+    .status-err { background: #3a1a1a; color: #f87171; border: 1px solid #f87171; }
+
+    /* ── Layout ── */
+    main { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+
+    /* ── Cards row ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+    .card-value { font-size: 32px; font-weight: 700; margin: 8px 0 4px; }
+    .card-sub   { font-size: 12px; color: #64748b; }
+    .val-blue   { color: #7c85ff; }
+    .val-green  { color: #4ade80; }
+    .val-amber  { color: #fbbf24; }
+    .val-red    { color: #f87171; }
+
+    /* ── Resource bars ── */
+    .bars {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .bar-card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .bar-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .bar-title { font-size: 14px; font-weight: 600; }
+    .bar-pct   { font-size: 14px; font-weight: 700; }
+    .bar-track {
+      background: #2d3148;
+      border-radius: 6px;
+      height: 10px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.5s ease;
+    }
+    .bar-detail { font-size: 12px; color: #64748b; }
+
+    /* ── Panels row ── */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 16px;
+    }
+
+    /* ── VM Table ── */
+    .panel {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #2d3148;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-title { font-size: 14px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #2d3148;
+    }
+    td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid #1e2235; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1e2235; }
+    .badge {
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-running { background: #1a3a2a; color: #4ade80; }
+    .badge-stopped { background: #3a2a1a; color: #fbbf24; }
+    .badge-dead    { background: #3a1a1a; color: #f87171; }
+    .empty-row td  { text-align: center; color: #475569; padding: 32px; }
+    
+    .chart-container {
+  background: #0f1117;
+  border: 1px solid #2d3148;
+  border-radius: 10px;
+  padding: 16px;
+  position: relative;
+  height: 180px;
+}
+.chart-title {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.chart-canvas {
+  width: 100%;
+  height: 140px;
+}
+.metric-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+.pill-cpu { background: #2a1f00; color: #fbbf24; }
+.pill-ram { background: #0a2a1a; color: #4ade80; }
+
+    /* ── Action buttons in table ── */
+    .btn-sm {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      margin-right: 4px;
+      transition: opacity 0.2s;
+    }
+    .btn-sm:hover { opacity: 0.8; }
+    .btn-stop    { background: #3a2a1a; color: #fbbf24; }
+    .btn-destroy { background: #3a1a1a; color: #f87171; }
+    
+    .btn-start   { background: #1a3a2a; color: #4ade80; }
+    .btn-history { background: #1e2a3a; color: #7c85ff; }
+    
+    .btn-snapshot { background: #1a2a3a; color: #38bdf8; }
+
+    /* ── Create VM form ── */
+    .form-panel { padding: 20px; }
+    .form-panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+    .form-group { margin-bottom: 14px; }
+    label { font-size: 12px; color: #94a3b8; display: block; margin-bottom: 6px; }
+    input, select {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: #e2e8f0;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { border-color: #7c85ff; }
+    .btn-create {
+      width: 100%;
+      padding: 10px;
+      background: #7c85ff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 4px;
+    }
+    .btn-create:hover { background: #6470f0; }
+    .btn-create:disabled { background: #2d3148; color: #64748b; cursor: not-allowed; }
+
+    /* ── Admission result ── */
+    #admit-result {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: none;
+    }
+    .admit-ok  { background: #1a3a2a; border: 1px solid #4ade80; color: #4ade80; }
+    .admit-err { background: #3a1a1a; border: 1px solid #f87171; color: #f87171; }
+
+    /* ── Log ── */
+    #log {
+      margin-top: 20px;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 11px;
+      font-family: monospace;
+      color: #64748b;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .log-ok  { color: #4ade80; }
+    .log-err { color: #f87171; }
+    .log-inf { color: #7c85ff; }
+
+    /* ── Refresh ── */
+    #last-refresh { font-size: 11px; color: #475569; }
+  </style>
+</head>
+<body>
+
+<!-- Login overlay -->
+<div id="login-overlay" style="
+  position:fixed; inset:0; background:#0f1117;
+  display:flex; align-items:center; justify-content:center;
+  z-index:999;">
+  <div style="
+    background:#1a1d27; border:1px solid #2d3148;
+    border-radius:16px; padding:40px; width:360px;">
+    <h2 style="color:#7c85ff; margin-bottom:8px;">MyCloud</h2>
+    <p style="color:#64748b; font-size:13px; margin-bottom:28px;">
+      Sign in to your cloud dashboard
+    </p>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:6px;">
+        Username
+      </label>
+      <input id="login-user" type="text" placeholder="admin"
+        style="width:100%;background:#0f1117;border:1px solid #2d3148;
+        border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:13px;outline:none;"/>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:6px;">
+        Password
+      </label>
+      <input id="login-pass" type="password" placeholder="••••••••"
+        style="width:100%;background:#0f1117;border:1px solid #2d3148;
+        border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:13px;outline:none;"
+        onkeydown="if(event.key==='Enter') doLogin()"/>
+    </div>
+    <div id="login-error" style="
+      display:none; background:#3a1a1a; border:1px solid #f87171;
+      color:#f87171; padding:10px 14px; border-radius:8px;
+      font-size:12px; margin-bottom:16px;">
+    </div>
+    <button onclick="doLogin()" style="
+      width:100%; padding:11px; background:#7c85ff; color:#fff;
+      border:none; border-radius:8px; font-size:14px;
+      font-weight:600; cursor:pointer;">
+      Sign In
+    </button>
+  </div>
+</div>
+
+<header>
+  <h1>My<span>Cloud</span> Dashboard</h1>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <span id="last-refresh">Connecting...</span>
+    <span id="api-status" class="status-err">● API Offline</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+  <span id="logged-in-user" style="font-size:12px;color:#94a3b8;"></span>
+  <span id="last-refresh">Connecting...</span>
+  <span id="api-status" class="status-err">● API Offline</span>
+  <button onclick="doLogout()" style="
+    padding:4px 12px; background:#2d3148; color:#e2e8f0;
+    border:none; border-radius:6px; font-size:12px;
+    cursor:pointer;">Logout</button>
+</div>
+</header>
+
+<main>
+
+  <!-- Stat cards -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Running VMs</div>
+      <div class="card-value val-blue" id="vm-count">—</div>
+      <div class="card-sub">Active instances</div>
+    </div>
+    <div class="card">
+      <div class="card-label">CPU Allocated</div>
+      <div class="card-value val-amber" id="cpu-alloc">—</div>
+      <div class="card-sub" id="cpu-total">of — cores</div>
+    </div>
+    <div class="card">
+      <div class="card-label">RAM Allocated</div>
+      <div class="card-value val-green" id="ram-alloc">—</div>
+      <div class="card-sub" id="ram-total">of — MB</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Free RAM</div>
+      <div class="card-value val-blue" id="ram-free">—</div>
+      <div class="card-sub">MB available</div>
+    </div>
+  </div>
+
+  <!-- Resource bars -->
+  <div class="bars">
+    <div class="bar-card">
+      <div class="bar-header">
+        <span class="bar-title">CPU Usage</span>
+        <span class="bar-pct val-amber" id="cpu-pct">—%</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" id="cpu-bar" style="width:0%;background:#fbbf24;"></div>
+      </div>
+      <div class="bar-detail" id="cpu-detail">Loading...</div>
+    </div>
+    <div class="bar-card">
+      <div class="bar-header">
+        <span class="bar-title">RAM Usage</span>
+        <span class="bar-pct val-green" id="ram-pct">—%</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" id="ram-bar" style="width:0%;background:#4ade80;"></div>
+      </div>
+      <div class="bar-detail" id="ram-detail">Loading...</div>
+    </div>
+  </div>
+
+  <!-- VM table + Create form -->
+  <div class="panels">
+
+    <!-- VM list -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">VM Instances</span>
+        <span id="last-refresh-table" style="font-size:11px;color:#475569;"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>IP</th>
+            <th>CPU</th>
+            <th>RAM</th>
+            <th>Created</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="vm-table-body">
+          <tr class="empty-row"><td colspan="6">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Create VM form -->
+    <div class="panel">
+      <div class="form-panel">
+        <h3>⚡ Launch New VM</h3>
+
+        <div class="form-group">
+          <label>VM Name</label>
+          <input type="text" id="f-name" placeholder="e.g. webserver1"/>
+        </div>
+
+        <div class="form-group">
+          <label>CPUs</label>
+          <select id="f-cpus">
+            <option value="0.5">0.5 cores</option>
+            <option value="1" selected>1 core</option>
+            <option value="2">2 cores</option>
+            <option value="4">4 cores</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Memory</label>
+          <select id="f-memory">
+            <option value="128m">128 MB</option>
+            <option value="256m" selected>256 MB</option>
+            <option value="512m">512 MB</option>
+            <option value="1024m">1 GB</option>
+          </select>
+        </div>
+
+        <div id="admit-result"></div>
+
+        <button class="btn-create" id="btn-create" onclick="createVM()">
+          Launch VM
+        </button>
+
+        <div id="log"></div>
+      </div>
+    </div>
+
+  </div>
+  <!-- .panels grid closed here — everything below is full width -->
+
+  <!-- Snapshots panel -->
+<div style="margin-top:20px;">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">📸 Snapshots</span>
+      <span id="snapshot-storage" style="font-size:11px;color:#475569;"></span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Snapshot Name</th>
+          <th>Source VM</th>
+          <th>Size</th>
+          <th>Created</th>
+          <th>Description</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="snapshot-table-body">
+        <tr class="empty-row"><td colspan="6">No snapshots yet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Auto Scaler panel -->
+<div style="margin-top:20px;">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">⚡ Auto Scaler</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="scaler-status-badge" class="badge badge-stopped">Stopped</span>
+        <button class="btn-sm btn-start"   onclick="scalerStart()">Start</button>
+        <button class="btn-sm btn-stop"    onclick="scalerStop()">Stop</button>
+        <button class="btn-sm btn-history" onclick="scalerCheck()">Run Check Now</button>
+      </div>
+    </div>
+
+    <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+      <!-- Current usage -->
+      <div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:12px;
+             text-transform:uppercase;letter-spacing:1px;">
+          Current Usage
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          <div class="card" style="padding:14px;">
+            <div class="card-label">CPU</div>
+            <div class="card-value val-amber" id="sc-cpu" style="font-size:22px;">—</div>
+          </div>
+          <div class="card" style="padding:14px;">
+            <div class="card-label">RAM</div>
+            <div class="card-value val-green" id="sc-ram" style="font-size:22px;">—</div>
+          </div>
+          <div class="card" style="padding:14px;">
+            <div class="card-label">VMs</div>
+            <div class="card-value val-blue" id="sc-vms" style="font-size:22px;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Policy editor -->
+      <div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:12px;
+             text-transform:uppercase;letter-spacing:1px;">
+          Scaling Policy
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label style="font-size:11px;color:#64748b;">Scale Up CPU %</label>
+            <input id="p-cpu-up" type="number" min="1" max="100" value="70"
+              style="width:100%;background:#0f1117;border:1px solid #2d3148;
+              border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:13px;"/>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;">Scale Up RAM %</label>
+            <input id="p-ram-up" type="number" min="1" max="100" value="70"
+              style="width:100%;background:#0f1117;border:1px solid #2d3148;
+              border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:13px;"/>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;">Scale Down CPU %</label>
+            <input id="p-cpu-down" type="number" min="1" max="100" value="25"
+              style="width:100%;background:#0f1117;border:1px solid #2d3148;
+              border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:13px;"/>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;">Scale Down RAM %</label>
+            <input id="p-ram-down" type="number" min="1" max="100" value="25"
+              style="width:100%;background:#0f1117;border:1px solid #2d3148;
+              border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:13px;"/>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;">Min VMs</label>
+            <input id="p-min" type="number" min="0" max="20" value="1"
+              style="width:100%;background:#0f1117;border:1px solid #2d3148;
+              border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:13px;"/>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;">Max VMs</label>
+            <input id="p-max" type="number" min="1" max="20" value="6"
+              style="width:100%;background:#0f1117;border:1px solid #2d3148;
+              border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:13px;"/>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;">Check Interval (s)</label>
+            <input id="p-interval" type="number" min="10" value="30"
+              style="width:100%;background:#0f1117;border:1px solid #2d3148;
+              border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:13px;"/>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;">Cooldown (s)</label>
+            <input id="p-cooldown" type="number" min="10" value="60"
+              style="width:100%;background:#0f1117;border:1px solid #2d3148;
+              border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:13px;"/>
+          </div>
+        </div>
+        <button onclick="savePolicy()" style="
+          margin-top:10px; width:100%; padding:8px;
+          background:#7c85ff; color:#fff; border:none;
+          border-radius:6px; font-size:13px; font-weight:600;
+          cursor:pointer;">
+          Save Policy
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Scaler log -->
+    <div style="padding:0 20px 20px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:6px;">
+        Scaler Log
+        <a href="#" onclick="loadScalerLog()" 
+           style="color:#7c85ff;margin-left:8px;text-decoration:none;">
+          Refresh
+        </a>
+      </div>
+      <div id="scaler-log" style="
+        background:#0f1117; border:1px solid #2d3148;
+        border-radius:8px; padding:12px; font-size:11px;
+        font-family:monospace; color:#64748b;
+        max-height:150px; overflow-y:auto;">
+        Click Refresh to load scaler log...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Metrics panel -->
+<div style="margin-top:20px;">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">📊 Live Metrics</span>
+      <span style="font-size:11px;color:#475569;">
+        Updates every 10s · last 10 minutes
+      </span>
+    </div>
+
+    <!-- Cluster overview chart -->
+    <div style="padding:20px 20px 0;">
+      <div class="chart-container">
+        <div class="chart-title">
+          Cluster Overview
+          <span class="metric-pill pill-cpu" id="cluster-cpu-val">CPU —%</span>
+          <span class="metric-pill pill-ram" id="cluster-ram-val">RAM — MB</span>
+        </div>
+        <canvas id="cluster-chart" class="chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Per-VM charts -->
+    <div id="vm-charts" style="
+      padding:16px 20px 20px;
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(280px,1fr));
+      gap:14px;">
+      <div style="color:#475569;font-size:13px;padding:20px;">
+        No VMs running — start a VM to see metrics.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Storage panel -->
+<div style="margin-top:20px;">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">🗄️ Object Storage</span>
+      <span id="storage-usage-text" style="font-size:11px;color:#475569;"></span>
+    </div>
+
+    <div style="padding:20px;">
+      <div style="display:flex;gap:12px;align-items:end;margin-bottom:16px;">
+        <div style="flex:1;">
+          <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:6px;">
+            Choose file to upload
+          </label>
+          <input type="file" id="upload-file-input" style="
+            width:100%;background:#0f1117;border:1px solid #2d3148;
+            border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:13px;"/>
+        </div>
+        <button onclick="uploadFile()" style="
+          padding:9px 20px;background:#7c85ff;color:#fff;
+          border:none;border-radius:8px;font-size:13px;
+          font-weight:600;cursor:pointer;white-space:nowrap;">
+          Upload
+        </button>
+      </div>
+
+      <div class="bar-track" style="margin-bottom:8px;">
+        <div class="bar-fill" id="storage-bar"
+          style="width:0%;background:#7c85ff;"></div>
+      </div>
+      <div class="bar-detail" id="storage-detail">Loading...</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Filename</th>
+          <th>Size</th>
+          <th>Type</th>
+          <th>Uploaded</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="storage-table-body">
+        <tr class="empty-row"><td colspan="5">No files uploaded yet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<script>
+  const API = "/api";
+  let TOKEN = null;
+
+  // ── Auth helpers ────────────────────────────────────────
+  function authHeaders() {
+    return {
+      "Content-Type":  "application/json",
+      "Authorization": `Bearer ${TOKEN}`
+    };
+  }
+
+  async function doLogin() {
+  const username = document.getElementById("login-user").value.trim();
+  const password = document.getElementById("login-pass").value;
+  const errEl    = document.getElementById("login-error");
+
+  try {
+    const res  = await fetch(`${API}/auth/login`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      if (data.role !== "admin") {
+        errEl.textContent = "This dashboard is admin-only. Please use the MyDrive app to manage your files.";
+        errEl.style.display = "block";
+        return;
+      }
+
+      TOKEN = data.token;
+      document.getElementById("login-overlay").style.display = "none";
+      document.getElementById("logged-in-user").textContent  =
+        `👤 ${data.username} (${data.role})`;
+      errEl.style.display = "none";
+      refresh();
+    } else {
+      errEl.textContent   = data.error || "Login failed";
+      errEl.style.display = "block";
+    }
+  } catch(e) {
+    errEl.textContent   = "Cannot reach API — is it running?";
+    errEl.style.display = "block";
+  }
+}
+
+  function doLogout() {
+    TOKEN = null;
+    document.getElementById("login-overlay").style.display = "flex";
+  }
+
+  async function checkAuth() {
+  if (!TOKEN) {
+    document.getElementById("login-overlay").style.display = "flex";
+    return false;
+  }
+  try {
+    const res = await fetch(`${API}/auth/me`, { headers: authHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+
+      if (data.role !== "admin") {
+        alert("This dashboard is for administrators only.\n\nIf you're looking to store files, please use the MyDrive app instead.");
+        doLogout();
+        return false;
+      }
+
+      document.getElementById("login-overlay").style.display = "none";
+      document.getElementById("logged-in-user").textContent  = `👤 ${data.username} (${data.role})`;
+      return true;
+    } else {
+      doLogout();
+      return false;
+    }
+  } catch(e) {
+    return false;
+  }
+}
+
+  // ── Logging ─────────────────────────────────────────────
+  function log(msg, type="inf") {
+    const el  = document.getElementById("log");
+    const ts  = new Date().toLocaleTimeString();
+    const div = document.createElement("div");
+    div.className   = `log-${type}`;
+    div.textContent = `[${ts}] ${msg}`;
+    el.prepend(div);
+    while (el.children.length > 20) el.removeChild(el.lastChild);
+  }
+
+  // ── Cluster status ───────────────────────────────────────
+  async function fetchStatus() {
+    try {
+      const res  = await fetch(`${API}/status`, { headers: authHeaders() });
+      const data = await res.json();
+      const c    = data.cluster;
+
+      document.getElementById("api-status").className  = "status-ok";
+      document.getElementById("api-status").textContent = "● API Online";
+      document.getElementById("vm-count").textContent   = data.vm_count;
+      document.getElementById("cpu-alloc").textContent  = c.allocated_cpus;
+      document.getElementById("ram-alloc").textContent  = c.allocated_memory_mb + " MB";
+      document.getElementById("ram-free").textContent   = c.free_memory_mb + " MB";
+      document.getElementById("cpu-total").textContent  = `of ${c.total_cpus} cores`;
+      document.getElementById("ram-total").textContent  = `of ${c.total_memory_mb} MB`;
+      document.getElementById("cpu-pct").textContent    = c.cpu_usage_pct + "%";
+      document.getElementById("ram-pct").textContent    = c.ram_usage_pct + "%";
+      document.getElementById("cpu-bar").style.width    = c.cpu_usage_pct + "%";
+      document.getElementById("ram-bar").style.width    = c.ram_usage_pct + "%";
+      document.getElementById("cpu-detail").textContent =
+        `${c.allocated_cpus} allocated · ${c.free_cpus} free`;
+      document.getElementById("ram-detail").textContent =
+        `${c.allocated_memory_mb} MB allocated · ${c.free_memory_mb} MB free`;
+
+      const now = new Date().toLocaleTimeString();
+      document.getElementById("last-refresh").textContent       = `Updated ${now}`;
+      document.getElementById("last-refresh-table").textContent = `Updated ${now}`;
+
+    } catch(e) {
+      document.getElementById("api-status").className  = "status-err";
+      document.getElementById("api-status").textContent = "● API Offline";
+    }
+  }
+
+  // ── VM list ──────────────────────────────────────────────
+  async function fetchVMs() {
+    try {
+      const res   = await fetch(`${API}/vm/list`, { headers: authHeaders() });
+      const data  = await res.json();
+      const tbody = document.getElementById("vm-table-body");
+
+      if (data.vms.length === 0) {
+        tbody.innerHTML =
+          `<tr class="empty-row"><td colspan="7">No VMs found. Launch one →</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.vms.map(vm => {
+        const badgeClass = {
+          running: "badge-running",
+          stopped: "badge-stopped",
+          exited:  "badge-stopped",
+          lost:    "badge-dead",
+        }[vm.status] || "badge-dead";
+
+        const actions = vm.status === "running"
+          ? `<button class="btn-sm btn-stop"     onclick="stopVM('${vm.name}')">Stop</button>
+             <button class="btn-sm btn-destroy"  onclick="destroyVM('${vm.name}')">Destroy</button>
+             <button class="btn-sm btn-snapshot" onclick="takeSnapshot('${vm.name}')">Snapshot</button>
+             <button class="btn-sm btn-history"  onclick="showHistory('${vm.name}')">History</button>`
+          : `<button class="btn-sm btn-start"    onclick="startVM('${vm.name}')">Start</button>
+             <button class="btn-sm btn-destroy"  onclick="destroyVM('${vm.name}')">Destroy</button>
+             <button class="btn-sm btn-history"  onclick="showHistory('${vm.name}')">History</button>`;
+
+        const rowStyle = vm.status !== "running" ? 'style="opacity:0.65;"' : "";
+
+        return `
+          <tr ${rowStyle}>
+            <td><strong>${vm.name}</strong></td>
+            <td style="font-family:monospace;font-size:12px;">${vm.ip}</td>
+            <td>${vm.cpus}</td>
+            <td>${vm.memory}</td>
+            <td>${vm.created}</td>
+            <td><span class="badge ${badgeClass}">${vm.status}</span></td>
+            <td>${actions}</td>
+          </tr>`;
+      }).join("");
+
+    } catch(e) { /* handled by fetchStatus */ }
+  }
+
+  // ── VM actions ───────────────────────────────────────────
+  async function createVM() {
+    const name   = document.getElementById("f-name").value.trim();
+    const cpus   = document.getElementById("f-cpus").value;
+    const memory = document.getElementById("f-memory").value;
+    const result = document.getElementById("admit-result");
+    const btn    = document.getElementById("btn-create");
+
+    if (!name) { alert("Please enter a VM name."); return; }
+
+    btn.disabled        = true;
+    btn.textContent     = "Launching...";
+    result.style.display = "none";
+
+    try {
+      const res  = await fetch(`${API}/vm/create`, {
+        method:  "POST",
+        headers: authHeaders(),
+        body:    JSON.stringify({ name, cpus, memory }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        result.className     = "admit-ok";
+        result.textContent   = `✅ VM '${name}' created — IP: ${data.vm.ip}`;
+        result.style.display = "block";
+        document.getElementById("f-name").value = "";
+        log(`VM '${name}' created — ${cpus} CPU, ${memory}`, "ok");
+        refresh();
+      } else {
+        result.className     = "admit-err";
+        result.textContent   = `❌ ${data.error || data.reason}`;
+        result.style.display = "block";
+        log(`Failed to create '${name}': ${data.error || data.reason}`, "err");
+      }
+    } catch(e) { log("API unreachable", "err"); }
+
+    btn.disabled    = false;
+    btn.textContent = "Launch VM";
+  }
+
+  async function stopVM(name) {
+    if (!confirm(`Stop VM '${name}'?`)) return;
+    try {
+      await fetch(`${API}/vm/${name}/stop`, {
+        method: "POST", headers: authHeaders()
+      });
+      log(`VM '${name}' stopped`, "ok");
+      refresh();
+    } catch(e) { log("API unreachable", "err"); }
+  }
+
+  async function startVM(name) {
+    try {
+      const res  = await fetch(`${API}/vm/${name}/start`, {
+        method: "POST", headers: authHeaders()
+      });
+      const data = await res.json();
+      if (res.ok) {
+        log(`VM '${name}' started`, "ok");
+        refresh();
+      } else {
+        log(`Failed to start '${name}': ${data.error}`, "err");
+      }
+    } catch(e) { log("API unreachable", "err"); }
+  }
+
+  async function destroyVM(name) {
+    if (!confirm(`Permanently destroy VM '${name}'? Cannot be undone.`)) return;
+    try {
+      await fetch(`${API}/vm/${name}`, {
+        method: "DELETE", headers: authHeaders()
+      });
+      log(`VM '${name}' destroyed`, "err");
+      refresh();
+    } catch(e) { log("API unreachable", "err"); }
+  }
+
+  async function showHistory(name) {
+    try {
+      const res  = await fetch(`${API}/vm/${name}/history`, {
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      const lines = data.history.map(h =>
+        `${h.time.slice(0,19)}  →  ${h.event}`
+      ).join("\n");
+      alert(`VM '${name}' History:\n\n${lines}`);
+    } catch(e) { log(`Could not fetch history for '${name}'`, "err"); }
+  }
+
+  // ── Snapshots ────────────────────────────────────────────
+  async function takeSnapshot(vmName) {
+    const snapName = prompt(
+      `Snapshot name for VM '${vmName}':\n(leave blank for auto-name)`, ""
+    );
+    if (snapName === null) return;
+    const desc = prompt("Description (optional):", "") || "";
+
+    try {
+      log(`Taking snapshot of '${vmName}'...`, "inf");
+      const res  = await fetch(`${API}/vm/${vmName}/snapshot`, {
+        method:  "POST",
+        headers: authHeaders(),
+        body:    JSON.stringify({
+          snapshot_name: snapName || undefined,
+          description:   desc
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        log(`Snapshot '${data.snapshot.snapshot_name}' created (${data.snapshot.size_mb} MB)`, "ok");
+        fetchSnapshots();
+      } else {
+        log(`Snapshot failed: ${data.error}`, "err");
+      }
+    } catch(e) { log("API unreachable", "err"); }
+  }
+
+  async function fetchSnapshots() {
+    try {
+      const res   = await fetch(`${API}/snapshots`, { headers: authHeaders() });
+      const data  = await res.json();
+      const tbody = document.getElementById("snapshot-table-body");
+      const store = document.getElementById("snapshot-storage");
+
+      store.textContent = `${data.count} snapshot(s) · ${data.storage.total_size_mb} MB`;
+
+      if (data.snapshots.length === 0) {
+        tbody.innerHTML =
+          `<tr class="empty-row"><td colspan="6">No snapshots yet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.snapshots.map(s => `
+        <tr>
+          <td><strong>${s.snapshot_name}</strong></td>
+          <td>${s.source_vm}</td>
+          <td>${s.size_mb} MB</td>
+          <td>${s.created_at.slice(0,19)}</td>
+          <td style="color:#64748b;font-size:12px;">${s.description || "—"}</td>
+          <td>
+            <button class="btn-sm btn-start"
+              onclick="restoreSnapshot('${s.snapshot_name}')">Restore</button>
+            <button class="btn-sm btn-destroy"
+              onclick="deleteSnapshot('${s.snapshot_name}')">Delete</button>
+          </td>
+        </tr>`
+      ).join("");
+
+    } catch(e) { /* API offline */ }
+  }
+
+  async function restoreSnapshot(snapName) {
+    const vmName = prompt(`Restore '${snapName}' as new VM.\nEnter new VM name:`);
+    if (!vmName) return;
+    const cpus   = prompt("CPUs:", "1")    || "1";
+    const memory = prompt("Memory:", "256m") || "256m";
+
+    try {
+      log(`Restoring snapshot '${snapName}' → VM '${vmName}'...`, "inf");
+      const res  = await fetch(`${API}/snapshots/${snapName}/restore`, {
+        method:  "POST",
+        headers: authHeaders(),
+        body:    JSON.stringify({ vm_name: vmName, cpus, memory }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        log(`VM '${vmName}' restored from '${snapName}' at ${data.vm.ip}`, "ok");
+        refresh();
+      } else {
+        log(`Restore failed: ${data.error}`, "err");
+      }
+    } catch(e) { log("API unreachable", "err"); }
+  }
+
+  async function deleteSnapshot(snapName) {
+    if (!confirm(`Delete snapshot '${snapName}'?`)) return;
+    try {
+      await fetch(`${API}/snapshots/${snapName}`, {
+        method: "DELETE", headers: authHeaders()
+      });
+      log(`Snapshot '${snapName}' deleted`, "err");
+      fetchSnapshots();
+    } catch(e) { log("API unreachable", "err"); }
+  }
+  
+  // ── Auto Scaler ───────────────────────────────────────────
+
+async function fetchScalerStatus() {
+  try {
+    const res  = await fetch(`${API}/autoscaler/status`, {
+      headers: authHeaders()
+    });
+    const data = await res.json();
+
+    const badge = document.getElementById("scaler-status-badge");
+    if (data.running) {
+      badge.className   = "badge badge-running";
+      badge.textContent = "Running";
+    } else {
+      badge.className   = "badge badge-stopped";
+      badge.textContent = "Stopped";
+    }
+
+    document.getElementById("sc-cpu").textContent = data.current_usage.cpu_pct + "%";
+    document.getElementById("sc-ram").textContent = data.current_usage.ram_pct + "%";
+    document.getElementById("sc-vms").textContent = data.current_usage.vm_count;
+
+    // Populate policy fields
+    const p = data.policy;
+    document.getElementById("p-cpu-up").value    = p.scale_up_cpu_pct;
+    document.getElementById("p-ram-up").value    = p.scale_up_ram_pct;
+    document.getElementById("p-cpu-down").value  = p.scale_down_cpu_pct;
+    document.getElementById("p-ram-down").value  = p.scale_down_ram_pct;
+    document.getElementById("p-min").value       = p.min_vms;
+    document.getElementById("p-max").value       = p.max_vms;
+    document.getElementById("p-interval").value  = p.check_interval;
+    document.getElementById("p-cooldown").value  = p.cooldown;
+
+  } catch(e) { /* API offline */ }
+}
+
+async function scalerStart() {
+  try {
+    const res  = await fetch(`${API}/autoscaler/start`, {
+      method: "POST", headers: authHeaders()
+    });
+    const data = await res.json();
+    log(`Auto Scaler: ${data.status}`, "ok");
+    fetchScalerStatus();
+  } catch(e) { log("API unreachable", "err"); }
+}
+
+async function scalerStop() {
+  try {
+    const res  = await fetch(`${API}/autoscaler/stop`, {
+      method: "POST", headers: authHeaders()
+    });
+    const data = await res.json();
+    log(`Auto Scaler: ${data.status}`, "inf");
+    fetchScalerStatus();
+  } catch(e) { log("API unreachable", "err"); }
+}
+
+async function scalerCheck() {
+  try {
+    await fetch(`${API}/autoscaler/check`, {
+      method: "POST", headers: authHeaders()
+    });
+    log("Manual scaling check triggered", "inf");
+    setTimeout(refresh, 2000);
+  } catch(e) { log("API unreachable", "err"); }
+}
+
+async function savePolicy() {
+  const policy = {
+    scale_up_cpu_pct:   parseInt(document.getElementById("p-cpu-up").value),
+    scale_up_ram_pct:   parseInt(document.getElementById("p-ram-up").value),
+    scale_down_cpu_pct: parseInt(document.getElementById("p-cpu-down").value),
+    scale_down_ram_pct: parseInt(document.getElementById("p-ram-down").value),
+    min_vms:            parseInt(document.getElementById("p-min").value),
+    max_vms:            parseInt(document.getElementById("p-max").value),
+    check_interval:     parseInt(document.getElementById("p-interval").value),
+    cooldown:           parseInt(document.getElementById("p-cooldown").value),
+  };
+
+  try {
+    const res  = await fetch(`${API}/autoscaler/policy`, {
+      method:  "PUT",
+      headers: authHeaders(),
+      body:    JSON.stringify(policy),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      log("Scaling policy saved", "ok");
+    } else {
+      log(`Policy error: ${data.error}`, "err");
+    }
+  } catch(e) { log("API unreachable", "err"); }
+}
+
+async function loadScalerLog() {
+  try {
+    const res  = await fetch(`${API}/autoscaler/log`, {
+      headers: authHeaders()
+    });
+    const data = await res.json();
+    const el   = document.getElementById("scaler-log");
+    el.innerHTML = data.lines.map(l => {
+      const colour = l.includes("ERROR") ? "#f87171"
+                   : l.includes("WARN")  ? "#fbbf24"
+                   : l.includes("UP")    ? "#4ade80"
+                   : l.includes("DOWN")  ? "#f87171"
+                   : "#64748b";
+      return `<div style="color:${colour}">${l}</div>`;
+    }).join("");
+  } catch(e) {
+    document.getElementById("scaler-log").textContent = "Log unavailable.";
+  }
+}
+
+// ── Storage ──────────────────────────────────────────────
+
+async function uploadFile() {
+  const input = document.getElementById("upload-file-input");
+  if (!input.files.length) {
+    alert("Please choose a file first.");
+    return;
+  }
+
+  const file = input.files[0];
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    log(`Uploading '${file.name}'...`, "inf");
+    const res  = await fetch(`${API}/storage/upload`, {
+      method:  "POST",
+      headers: { "Authorization": `Bearer ${TOKEN}` },  // no Content-Type — browser sets it
+      body:    formData,
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      log(`Uploaded '${file.name}' (${data.file.size_mb} MB)`, "ok");
+      input.value = "";
+      fetchStorage();
+    } else {
+      log(`Upload failed: ${data.error}`, "err");
+    }
+  } catch(e) { log("API unreachable", "err"); }
+}
+
+
+async function fetchStorage() {
+  try {
+    const res   = await fetch(`${API}/storage/list`, { headers: authHeaders() });
+    const data  = await res.json();
+    const tbody = document.getElementById("storage-table-body");
+
+    document.getElementById("storage-usage-text").textContent =
+      `${data.usage_mb} MB / ${data.quota_mb} MB`;
+    document.getElementById("storage-bar").style.width = data.usage_pct + "%";
+    document.getElementById("storage-detail").textContent =
+      `${data.count} file(s) · ${data.usage_pct}% of quota used`;
+
+    if (data.files.length === 0) {
+      tbody.innerHTML =
+        `<tr class="empty-row"><td colspan="5">No files uploaded yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.files.map(f => `
+      <tr>
+        <td><strong>${f.filename}</strong></td>
+        <td>${f.size_mb} MB</td>
+        <td style="color:#64748b;font-size:12px;">${f.content_type}</td>
+        <td>${f.uploaded_at.slice(0,19)}</td>
+        <td>
+          <a href="${API}/storage/file/${f.file_id}?token=${TOKEN}"
+             target="_blank"
+             class="btn-sm btn-start"
+             style="text-decoration:none;display:inline-block;">
+             Download
+          </a>
+          <button class="btn-sm btn-destroy"
+            onclick="deleteFile('${f.file_id}', '${f.filename}')">
+            Delete
+          </button>
+        </td>
+      </tr>
+    `).join("");
+
+  }
+  catch(e) { console.error("Storage fetch error:", e); log("Storage error: " + e.message, "err"); }
+}
+
+
+async function deleteFile(fileId, filename) {
+  if (!confirm(`Delete '${filename}'? This cannot be undone.`)) return;
+  try {
+    await fetch(`${API}/storage/file/${fileId}`, {
+      method: "DELETE", headers: authHeaders()
+    });
+    log(`Deleted '${filename}'`, "err");
+    fetchStorage();
+  } catch(e) { log("API unreachable", "err"); }
+}
+
+  // ── Refresh all ──────────────────────────────────────────
+  async function refresh() {
+  const ok = await checkAuth();
+  if (!ok) return;
+  fetchStatus();
+  fetchVMs();
+  fetchSnapshots();
+  fetchScalerStatus();
+  fetchMetrics();
+  fetchStorage();
+}
+
+// ── Metrics charts ────────────────────────────────────────
+
+// Minimal SVG sparkline renderer — no external library needed
+function sparkline(canvasId, points, color, label) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx    = canvas.getContext("2d");
+  const W      = canvas.offsetWidth  || 400;
+  const H      = canvas.offsetHeight || 120;
+  canvas.width  = W;
+  canvas.height = H;
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (!points || points.length < 2) {
+    ctx.fillStyle = "#475569";
+    ctx.font      = "12px system-ui";
+    ctx.fillText("Collecting data...", W/2 - 50, H/2);
+    return;
+  }
+
+  const max  = Math.max(...points, 1);
+  const step = W / (points.length - 1);
+
+  // Grid lines
+  ctx.strokeStyle = "#1e2235";
+  ctx.lineWidth   = 1;
+  [25, 50, 75].forEach(pct => {
+    const y = H - (pct / 100) * H;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+
+    ctx.fillStyle = "#2d3148";
+    ctx.font      = "9px monospace";
+    ctx.fillText(`${pct}%`, 2, y - 2);
+  });
+
+  // Fill area under line
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  points.forEach((v, i) => {
+    const x = i * step;
+    const y = H - (v / max) * (H * 0.85);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo((points.length - 1) * step, H);
+  ctx.closePath();
+  ctx.fillStyle = color + "22";
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  points.forEach((v, i) => {
+    const x = i * step;
+    const y = H - (v / max) * (H * 0.85);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = 2;
+  ctx.stroke();
+
+  // Latest value dot
+  const lastX = (points.length - 1) * step;
+  const lastY = H - (points[points.length-1] / max) * (H * 0.85);
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+
+async function fetchMetrics() {
+  try {
+    // Cluster history
+    const clRes  = await fetch(`${API}/metrics/cluster/history?points=60`, {
+      headers: authHeaders()
+    });
+    const clData = await clRes.json();
+
+    if (clData.history && clData.history.length > 0) {
+      const cpuPoints = clData.history.map(p => p.total_cpu_pct);
+      const ramPoints = clData.history.map(p => p.total_ram_mb);
+      const latest    = clData.history[clData.history.length - 1];
+
+      document.getElementById("cluster-cpu-val").textContent =
+        `CPU ${latest.total_cpu_pct}%`;
+      document.getElementById("cluster-ram-val").textContent =
+        `RAM ${latest.total_ram_mb} MB`;
+
+      sparkline("cluster-chart", cpuPoints, "#fbbf24", "CPU %");
+    }
+
+    // Per-VM metrics
+    const vmRes  = await fetch(`${API}/vm/list`, { headers: authHeaders() });
+    const vmData = await vmRes.json();
+    const container = document.getElementById("vm-charts");
+
+    const runningVMs = vmData.vms.filter(v => v.status === "running");
+    if (runningVMs.length === 0) {
+      container.innerHTML =
+        `<div style="color:#475569;font-size:13px;padding:20px;">
+           No VMs running — start a VM to see metrics.
+         </div>`;
+      return;
+    }
+
+    // Build chart containers for each VM
+    for (const vm of runningVMs) {
+      // Create chart div if it doesn't exist
+      let chartDiv = document.getElementById(`chart-${vm.name}`);
+      if (!chartDiv) {
+        chartDiv = document.createElement("div");
+        chartDiv.id        = `chart-${vm.name}`;
+        chartDiv.className = "chart-container";
+        chartDiv.innerHTML = `
+          <div class="chart-title">
+            ${vm.name}
+            <span class="metric-pill pill-cpu"
+              id="cpu-pill-${vm.name}">CPU —%</span>
+            <span class="metric-pill pill-ram"
+              id="ram-pill-${vm.name}">RAM — MB</span>
+          </div>
+          <canvas id="canvas-cpu-${vm.name}" 
+            style="width:100%;height:55px;display:block;
+                   margin-bottom:6px;"></canvas>
+          <canvas id="canvas-ram-${vm.name}"
+            style="width:100%;height:55px;display:block;">
+          </canvas>`;
+        container.appendChild(chartDiv);
+      }
+
+      // Fetch history for this VM
+      const mRes  = await fetch(
+        `${API}/metrics/${vm.name}?points=60`,
+        { headers: authHeaders() }
+      );
+      const mData = await mRes.json();
+
+      if (mData.history && mData.history.length > 0) {
+        const cpuPts = mData.history.map(p => p.cpu_pct);
+        const ramPts = mData.history.map(p => p.ram_mb);
+        const latest = mData.latest;
+
+        document.getElementById(`cpu-pill-${vm.name}`).textContent =
+          `CPU ${latest.cpu_pct}%`;
+        document.getElementById(`ram-pill-${vm.name}`).textContent =
+          `RAM ${latest.ram_mb} MB`;
+
+        sparkline(`canvas-cpu-${vm.name}`, cpuPts, "#fbbf24", "CPU");
+        sparkline(`canvas-ram-${vm.name}`, ramPts, "#4ade80", "RAM");
+      }
+    }
+
+    // Remove charts for VMs that are no longer running
+    const runningNames = runningVMs.map(v => `chart-${v.name}`);
+    Array.from(container.children).forEach(child => {
+      if (child.id && !runningNames.includes(child.id)) {
+        container.removeChild(child);
+      }
+    });
+
+  } catch(e) { /* API offline */ }
+}
+
+  // ── Boot ─────────────────────────────────────────────────
+  refresh();
+  setInterval(refresh, 5000);
+</script>
+
+</body>
+</html>

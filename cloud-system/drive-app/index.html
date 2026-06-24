@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MyDrive</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #f8f9fc;
+    color: #1f2430;
+    min-height: 100vh;
+  }
+
+  /* ── Auth screens ── */
+  #auth-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  }
+  .auth-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 40px;
+    width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .auth-logo {
+    font-size: 26px;
+    font-weight: 800;
+    color: #6366f1;
+    margin-bottom: 4px;
+  }
+  .auth-sub {
+    font-size: 13px;
+    color: #8b8fa3;
+    margin-bottom: 28px;
+  }
+  .field { margin-bottom: 16px; }
+  .field label {
+    font-size: 12px;
+    color: #5b6172;
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .field input {
+    width: 100%;
+    border: 1.5px solid #e4e6f0;
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus { border-color: #6366f1; }
+  .btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: #5457d8; }
+  .auth-switch {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 13px;
+    color: #8b8fa3;
+  }
+  .auth-switch a {
+    color: #6366f1;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .auth-error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  /* ── Main app ── */
+  #app-screen { display: none; min-height: 100vh; }
+  header {
+    background: #fff;
+    border-bottom: 1px solid #ececf4;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo { font-size: 19px; font-weight: 800; color: #6366f1; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .user-pill {
+    font-size: 13px;
+    color: #5b6172;
+    background: #f3f4fa;
+    padding: 6px 14px;
+    border-radius: 20px;
+  }
+  .btn-logout {
+    padding: 6px 14px;
+    background: #f3f4fa;
+    color: #5b6172;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-logout:hover { background: #ececf4; }
+
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+
+  /* ── Upload zone ── */
+  .upload-zone {
+    border: 2px dashed #d3d6e8;
+    border-radius: 16px;
+    padding: 36px;
+    text-align: center;
+    background: #fff;
+    margin-bottom: 24px;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: #6366f1;
+    background: #f5f5ff;
+  }
+  .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-text { font-size: 15px; font-weight: 600; color: #1f2430; }
+  .upload-sub { font-size: 13px; color: #8b8fa3; margin-top: 4px; }
+  #file-input { display: none; }
+
+  /* ── Storage bar ── */
+  .storage-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #5b6172;
+  }
+  .storage-track {
+    background: #ececf4;
+    border-radius: 6px;
+    height: 8px;
+    width: 200px;
+    overflow: hidden;
+  }
+  .storage-fill {
+    height: 100%;
+    background: #6366f1;
+    transition: width 0.4s ease;
+  }
+
+  /* ── File list ── */
+  .file-list {
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #ececf4;
+  }
+  .file-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f3f4fa;
+    transition: background 0.1s;
+  }
+  .file-row:last-child { border-bottom: none; }
+  .file-row:hover { background: #fafafd; }
+  .file-icon {
+    font-size: 22px;
+    width: 40px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .file-info { flex: 1; min-width: 0; }
+  .file-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2430;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-meta {
+    font-size: 12px;
+    color: #9499ad;
+    margin-top: 2px;
+  }
+  .file-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: none;
+    background: #f3f4fa;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .icon-btn:hover { background: #ececf4; }
+  .icon-btn.danger:hover { background: #fef2f2; color: #dc2626; }
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #b0b4c4;
+  }
+  .empty-state .big { font-size: 40px; margin-bottom: 12px; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1f2430;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { background: #dc2626; }
+</style>
+</head>
+<body>
+
+<!-- Auth Screen -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">📦 MyDrive</div>
+    <div class="auth-sub" id="auth-subtitle">Sign in to access your files</div>
+
+    <div class="auth-error" id="auth-error"></div>
+
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="auth-username" placeholder="yourname" autocomplete="username"/>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') submitAuth()"/>
+    </div>
+
+    <button class="btn-primary" onclick="submitAuth()" id="auth-submit-btn">Sign In</button>
+
+    <div class="auth-switch">
+      <span id="auth-switch-text">Don't have an account?</span>
+      <a onclick="toggleAuthMode()" id="auth-switch-link">Sign up</a>
+    </div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app-screen">
+  <header>
+    <div class="logo">📦 MyDrive</div>
+    <div class="header-right">
+      <span class="user-pill" id="user-pill">👤</span>
+      <button class="btn-logout" onclick="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">☁️</div>
+      <div class="upload-text">Click to upload or drag a file here</div>
+      <div class="upload-sub">Any file type · up to 1 GB</div>
+      <input type="file" id="file-input" onchange="handleFileSelect(event)"/>
+    </div>
+
+    <div class="storage-summary">
+      <span id="storage-text">Loading storage...</span>
+      <div class="storage-track">
+        <div class="storage-fill" id="storage-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="file-list" id="file-list">
+      <div class="empty-state">
+        <div class="big">📁</div>
+        Loading your files...
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = "/api";
+  let TOKEN = null;
+  let AUTH_MODE = "login"; // or "signup"
+
+  // ── Toast ──────────────────────────────────────────────
+  function toast(msg, isError=false) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.className = "toast show" + (isError ? " error" : "");
+    setTimeout(() => el.className = "toast", 2500);
+  }
+
+  // ── Auth mode toggle ─────────────────────────────────────
+  function toggleAuthMode() {
+    AUTH_MODE = AUTH_MODE === "login" ? "signup" : "login";
+    document.getElementById("auth-error").style.display = "none";
+
+    if (AUTH_MODE === "signup") {
+      document.getElementById("auth-subtitle").textContent = "Create your account";
+      document.getElementById("auth-submit-btn").textContent = "Sign Up";
+      document.getElementById("auth-switch-text").textContent = "Already have an account?";
+      document.getElementById("auth-switch-link").textContent = "Sign in";
+    } else {
+      document.getElementById("auth-subtitle").textContent = "Sign in to access your files";
+      document.getElementById("auth-submit-btn").textContent = "Sign In";
+      document.getElementById("auth-switch-text").textContent = "Don't have an account?";
+      document.getElementById("auth-switch-link").textContent = "Sign up";
+    }
+  }
+
+  // ── Auth submit (login or signup) ───────────────────────
+  async function submitAuth() {
+    const username = document.getElementById("auth-username").value.trim();
+    const password = document.getElementById("auth-password").value;
+    const errEl     = document.getElementById("auth-error");
+    const btn       = document.getElementById("auth-submit-btn");
+
+    if (!username || !password) {
+      errEl.textContent = "Please fill in both fields.";
+      errEl.style.display = "block";
+      return;
+    }
+
+    const endpoint = AUTH_MODE === "signup" ? "/auth/signup" : "/auth/login";
+    btn.disabled = true;
+    btn.textContent = AUTH_MODE === "signup" ? "Creating account..." : "Signing in...";
+
+    try {
+      const res  = await fetch(`${API}${endpoint}`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        TOKEN = data.token;
+        showApp(data.username);
+      } else {
+        errEl.textContent   = data.error || "Something went wrong";
+        errEl.style.display = "block";
+      }
+    } catch(e) {
+      errEl.textContent   = "Cannot reach server. Is it running?";
+      errEl.style.display = "block";
+    }
+
+    btn.disabled = false;
+    btn.textContent = AUTH_MODE === "signup" ? "Sign Up" : "Sign In";
+  }
+
+  function showApp(username) {
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("app-screen").style.display  = "block";
+    document.getElementById("user-pill").textContent = `👤 ${username}`;
+    loadFiles();
+  }
+
+  function logout() {
+    TOKEN = null;
+    document.getElementById("auth-username").value = "";
+    document.getElementById("auth-password").value = "";
+    document.getElementById("app-screen").style.display  = "none";
+    document.getElementById("auth-screen").style.display = "flex";
+  }
+
+  function authHeaders() {
+    return { "Authorization": `Bearer ${TOKEN}` };
+  }
+
+  // ── File icons by type ───────────────────────────────────
+  function fileIcon(contentType, filename) {
+    if (contentType.startsWith("image/")) return "🖼️";
+    if (contentType.startsWith("video/")) return "🎬";
+    if (contentType.startsWith("audio/")) return "🎵";
+    if (contentType.includes("pdf"))      return "📕";
+    if (contentType.includes("zip") || contentType.includes("compressed")) return "🗜️";
+    if (filename.match(/\.(doc|docx)$/i)) return "📄";
+    if (filename.match(/\.(xls|xlsx|csv)$/i)) return "📊";
+    if (contentType.startsWith("text/"))  return "📝";
+    return "📦";
+  }
+
+  function formatSize(mb) {
+    if (mb < 1) return `${Math.round(mb * 1024)} KB`;
+    return `${mb} MB`;
+  }
+
+  // ── Load + render files ──────────────────────────────────
+  async function loadFiles() {
+    try {
+      const res  = await fetch(`${API}/storage/list`, { headers: authHeaders() });
+      const data = await res.json();
+
+      document.getElementById("storage-text").textContent =
+        `${data.usage_mb} MB of ${(data.quota_mb/1024).toFixed(1)} GB used`;
+      document.getElementById("storage-fill").style.width = data.usage_pct + "%";
+
+      const listEl = document.getElementById("file-list");
+
+      if (data.files.length === 0) {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <div class="big">📁</div>
+            No files yet — upload your first one above
+          </div>`;
+        return;
+      }
+
+      listEl.innerHTML = data.files.map(f => `
+        <div class="file-row">
+          <div class="file-icon">${fileIcon(f.content_type, f.filename)}</div>
+          <div class="file-info">
+            <div class="file-name">${f.filename}</div>
+            <div class="file-meta">${formatSize(f.size_mb)} · ${f.uploaded_at.slice(0,10)}</div>
+          </div>
+          <div class="file-actions">
+            <button class="icon-btn" title="Download"
+              onclick="downloadFile('${f.file_id}', '${f.filename}')">⬇️</button>
+            <button class="icon-btn danger" title="Delete"
+              onclick="deleteFile('${f.file_id}', '${f.filename}')">🗑️</button>
+          </div>
+        </div>
+      `).join("");
+
+    } catch(e) {
+      toast("Could not load files", true);
+    }
+  }
+
+  // ── Upload ───────────────────────────────────────────────
+  async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    toast(`Uploading ${file.name}...`);
+
+    try {
+      const res  = await fetch(`${API}/storage/upload`, {
+        method:  "POST",
+        headers: authHeaders(),
+        body:    formData,
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        toast(`${file.name} uploaded`);
+        loadFiles();
+      } else {
+        toast(data.error || "Upload failed", true);
+      }
+    } catch(e) {
+      toast("Upload failed — network error", true);
+    }
+  }
+
+  function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) uploadFile(file);
+    event.target.value = "";
+  }
+
+  // ── Drag and drop ───────────────────────────────────────
+  const dropZone = document.getElementById("upload-zone");
+  dropZone.addEventListener("dragover", e => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+  });
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+  });
+
+  // ── Download ─────────────────────────────────────────────
+  function downloadFile(fileId, filename) {
+    const url = `${API}/storage/file/${fileId}?token=${TOKEN}`;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.target = "_blank";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  // ── Delete ───────────────────────────────────────────────
+  async function deleteFile(fileId, filename) {
+    if (!confirm(`Delete "${filename}"? This cannot be undone.`)) return;
+    try {
+      await fetch(`${API}/storage/file/${fileId}`, {
+        method: "DELETE", headers: authHeaders()
+      });
+      toast(`${filename} deleted`);
+      loadFiles();
+    } catch(e) {
+      toast("Delete failed", true);
+    }
+  }
+</script>
+
+</body>
+</html>
